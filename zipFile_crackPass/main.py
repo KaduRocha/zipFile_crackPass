@@ -23,17 +23,17 @@ def gerar_arquivo():
 # Função que cada processo executa
 # ---------------------------
 def tentar_senha(args):
-    arquivo, senha, tipo = args
+    arquivo, senha, tipo, pasta_saida = args
     try:
         if tipo == 'zip':
             with zipfile.ZipFile(arquivo) as zf:
-                zf.extractall(pwd=senha)
+                zf.extractall(path=pasta_saida, pwd=senha)
         elif tipo == 'rar':
             with rarfile.RarFile(arquivo) as rf:
-                rf.extractall(pwd=senha.decode())
+                rf.extractall(path=pasta_saida, pwd=senha.decode())
         elif tipo == '7z':
             with py7zr.SevenZipFile(arquivo, mode='r', password=senha.decode()) as sz:
-                sz.extractall()
+                sz.extractall(path=pasta_saida)
         else:
             return None
         return senha.decode()
@@ -80,7 +80,10 @@ def crack_multicore(arquivo, pass_file):
     print(f"🔢  Total de senhas a testar: {total}")
     print(f"⚙️  Usando {cpu_count()} núcleos...\n")
 
-    args = [(arquivo, senha, tipo) for senha in senhas]
+    # Monta caminho para pasta de output.
+    pasta_saida = os.path.join("files","output")
+
+    args = [(arquivo, senha, tipo, pasta_saida) for senha in senhas]
 
     with Pool(cpu_count()) as pool:
         for result in tqdm(pool.imap_unordered(tentar_senha, args), total=total, desc="Tentando senhas", unit=" tentativa"):
@@ -105,9 +108,9 @@ if __name__ == "__main__":
 
     # Etapa 2: tentar quebrar o ZIP.
     # Pega todos os arquivos na pasta target referente as extensoes suportadas.
-    arquivos = [str(f) for f in Path("target").glob("*") if f.suffix.lower() in extensoes]
+    arquivos = [str(f) for f in Path("files/input").glob("*") if f.suffix.lower() in extensoes]
     if not arquivos:
-        print("❌  Nenhum arquivo encontrado na pasta 'target'.")
+        print("❌  Nenhum arquivo encontrado na pasta 'files/input'.")
     else:
         for arquivo in arquivos:
             if detectar_tipo(arquivo):
